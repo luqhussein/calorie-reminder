@@ -138,10 +138,43 @@ async function testPush(){
  const r=await fetch('/.netlify/functions/test-push',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({deviceId:deviceId()})});
  const data=await r.json().catch(()=>({}));if(r.ok)showToast('Test push sent','Lock your phone or switch apps — it should arrive as a normal push notification.');else showToast('Test failed',data.error||'Check Netlify function logs.');
 }
+function renderSavedSchedule(s){
+ if(!s?.meals?.length)return false;
+ $('targetInput').value=s.targetCalories||$('targetInput').value||1800;
+ $('mealCount').value=String(s.mealCount||s.meals.length||4);
+ if(s.firstMeal)$('firstMeal').value=s.firstMeal;
+ if(s.lastMeal)$('lastMeal').value=s.lastMeal;
+ scheduleBody.innerHTML='';
+ scheduledReminders=s.meals.map((m,i)=>({name:m.name||`Meal ${i+1}`,time:m.time,calories:+m.calories||0,food:m.food||''}));
+ scheduledReminders.forEach(m=>{
+   const tr=document.createElement('tr');
+   tr.innerHTML=`<td class="meal-name">${m.name}</td><td><input class="meal-time" type="time" value="${m.time}"></td><td><input class="meal-calories" type="number" value="${m.calories}" step="10"> <span class="kcal">kcal</span></td><td>${m.food}</td><td>Saved</td>`;
+   scheduleBody.appendChild(tr);
+ });
+ const start=mins(s.firstMeal||$('firstMeal').value),end=mins(s.lastMeal||$('lastMeal').value);let win=end-start;if(win<=0)win+=1440;
+ $('targetKcal').textContent=`${Number(s.targetCalories||0).toLocaleString()} kcal`;
+ $('mealCountMetric').textContent=`${scheduledReminders.length} meals`;
+ $('fastHours').textContent=`${Math.max(0,24-win/60).toFixed(1).replace('.0','')} h`;
+ return true;
+}
 function restore(){
- try{const p=JSON.parse(localStorage.getItem('calorieReminderProfile')||'null');if(p){document.querySelector(`#${p.sex}`).checked=true;$('age').value=p.age;$('height').value=p.height;$('weight').value=p.weight;$('activity').value=p.activity;$('targetInput').value=p.targetCalories;$('profilePill').textContent=`${p.sex==='male'?'Male':'Female'} • ${p.targetCalories.toLocaleString()} kcal target`}
- const s=JSON.parse(localStorage.getItem('calorieReminderSchedule')||'null');if(s?.meals?.length){$('targetInput').value=s.targetCalories;$('mealCount').value=String(s.mealCount);$('firstMeal').value=s.firstMeal;$('lastMeal').value=s.lastMeal;buildSchedule();[...scheduleBody.querySelectorAll('tr')].forEach((r,i)=>{if(s.meals[i]){r.querySelector('.meal-time').value=s.meals[i].time;r.querySelector('.meal-calories').value=s.meals[i].calories}});scheduledReminders=s.meals}}
- catch(e){}
+ try{
+   const p=JSON.parse(localStorage.getItem('calorieReminderProfile')||'null');
+   const s=JSON.parse(localStorage.getItem('calorieReminderSchedule')||'null');
+   if(p){
+     const sexEl=document.querySelector(`#${p.sex}`);if(sexEl)sexEl.checked=true;
+     $('age').value=p.age;$('height').value=p.height;$('weight').value=p.weight;$('activity').value=p.activity;
+     $('targetInput').value=p.targetCalories;
+     $('profilePill').textContent=`${p.sex==='male'?'Male':'Female'} • ${Number(p.targetCalories).toLocaleString()} kcal target`;
+   }
+   const restored=renderSavedSchedule(s);
+   if(p&&restored){
+     showPage(2);
+     $('savedTimeNotice').textContent='Saved schedule restored ✓';
+     $('savedTimeNotice').style.display='block';
+     setTimeout(()=>$('savedTimeNotice').style.display='none',4000);
+   }
+ }catch(e){console.error('Restore failed',e)}
 }
 $('buildBtn').onclick=buildSchedule;$('saveTimesBtn').onclick=syncSchedule;$('notifyBtn').onclick=enablePush;$('testBtn').onclick=testPush;$('editProfile').onclick=()=>showPage(1);
 if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(console.error));
