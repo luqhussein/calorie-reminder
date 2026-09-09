@@ -25,6 +25,44 @@ table{width:100%;border-collapse:collapse;min-width:720px}th,td{padding:13px 10p
 .toast{position:fixed;right:16px;left:16px;bottom:calc(16px + env(safe-area-inset-bottom));max-width:430px;margin:auto;background:#172131;color:#fff;padding:14px 16px;border-radius:13px;box-shadow:0 14px 35px rgba(0,0,0,.2);display:none;z-index:99}.toast.show{display:block}.toast b{display:block;margin-bottom:4px}.backlink{display:inline-block;margin-bottom:14px;color:var(--accent2);cursor:pointer;font-weight:700}
 @media(max-width:760px){.grid,.grid4{grid-template-columns:1fr 1fr}.summary{grid-template-columns:1fr}.actions button{flex:1 1 180px}}@media(max-width:520px){.grid,.grid4{grid-template-columns:1fr}.card{padding:18px}.actions{display:grid;grid-template-columns:1fr}.actions button{width:100%}}
 .change-food-btn{margin-top:9px;min-height:36px;padding:8px 11px;font-size:12px;border-radius:10px;white-space:nowrap}
+
+.meal-table{width:100%;border-collapse:separate;border-spacing:0;min-width:0}
+.meal-table thead th{padding:14px 12px}
+.meal-table td{padding:16px 12px;vertical-align:middle}
+.meal-table .meal-time,.meal-table .meal-calories{min-width:0;width:100%}
+.meal-table .food-text{display:block;line-height:1.4}
+.meal-action{text-align:right;white-space:nowrap}
+.meal-label{display:none;color:var(--muted);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.meal-main{font-weight:800}
+.meal-table .change-food-btn{margin:0;min-height:40px;padding:9px 12px;font-size:12px}
+
+@media(min-width:761px){
+  .meal-table{table-layout:fixed}
+  .meal-table th:nth-child(1){width:15%}
+  .meal-table th:nth-child(2){width:18%}
+  .meal-table th:nth-child(3){width:17%}
+  .meal-table th:nth-child(4){width:37%}
+  .meal-table th:nth-child(5){width:13%}
+}
+
+@media(max-width:760px){
+  .table-wrap{overflow:visible}
+  .meal-table{border-collapse:separate;border-spacing:0 14px}
+  .meal-table thead{display:none}
+  .meal-table tbody,.meal-table tr,.meal-table td{display:block;width:100%}
+  .meal-table tbody tr{
+    border:1px solid #e7edf4;border-radius:18px;padding:16px;
+    box-shadow:0 8px 22px rgba(41,72,110,.07);background:#fff
+  }
+  .meal-table td{padding:7px 0;border-bottom:0}
+  .meal-label{display:block}
+  .meal-table .meal-name{font-size:18px;padding-top:0}
+  .meal-table .meal-time,.meal-table .meal-calories{width:100%;min-height:48px}
+  .meal-table .food-text{font-size:15px}
+  .meal-action{text-align:left;padding-bottom:0!important}
+  .meal-table .change-food-btn{width:100%;margin-top:4px}
+}
+
 </style>
 </head>
 <body>
@@ -76,8 +114,8 @@ table{width:100%;border-collapse:collapse;min-width:720px}th,td{padding:13px 10p
       <div class="notice good" id="savedTimeNotice" style="display:none"></div>
     </section>
 
-    <section class="card"><div class="table-wrap"><table>
-      <thead><tr><th>Meal</th><th>Time</th><th>Calories</th><th>Malaysian meal suggestion</th><th>Reminder</th></tr></thead>
+    <section class="card"><div class="table-wrap"><table class="meal-table">
+      <thead><tr><th>Meal</th><th>Time</th><th>Calories (kcal)</th><th>Suggested Malaysian Food</th><th></th></tr></thead>
       <tbody id="scheduleBody"></tbody>
     </table></div></section>
   </section>
@@ -225,13 +263,18 @@ $('profileForm').addEventListener('submit',e=>{e.preventDefault();const sex=docu
 function buildSchedule(){
  const total=Math.max(1200,+$('targetInput').value||1800),n=+$('mealCount').value,start=mins($('firstMeal').value),end=mins($('lastMeal').value);let win=end-start;if(win<=0)win+=1440;
  const tp=template(n),gap=win/(n-1);scheduleBody.innerHTML='';scheduledReminders=[];let used=0;
- tp.forEach((m,i)=>{const kcal=i===tp.length-1?total-used:Math.round(total*m.pct/10)*10;used+=kcal;const t=timeStr(Math.round(start+gap*i));const food=malaysianFoodSuggestion(i,kcal,n);const tr=document.createElement('tr');tr.dataset.foodIndex='0';tr.innerHTML=`<td class="meal-name">${m.name}</td><td><input class="meal-time" type="time" value="${t}"></td><td><input class="meal-calories" type="number" value="${kcal}" step="10"> <span class="kcal">kcal</span></td><td><span class="food-text">${food}</span><br><button type="button" class="secondary change-food-btn" onclick="changeFood(this)">Change Food ↻</button></td><td>Ready</td>`;scheduleBody.appendChild(tr);scheduledReminders.push({name:m.name,time:t,calories:kcal,food})});
+ tp.forEach((m,i)=>{const kcal=i===tp.length-1?total-used:Math.round(total*m.pct/10)*10;used+=kcal;const t=timeStr(Math.round(start+gap*i));const food=malaysianFoodSuggestion(i,kcal,n);const tr=document.createElement('tr');tr.dataset.foodIndex='0';tr.innerHTML=`
+<td class="meal-name"><span class="meal-label">Meal</span><span class="meal-main">${m.name}</span></td>
+<td><span class="meal-label">Time</span><input class="meal-time" type="time" value="${t}"></td>
+<td><span class="meal-label">Calories (kcal)</span><input class="meal-calories" type="number" value="${kcal}" step="10"></td>
+<td><span class="meal-label">Suggested Malaysian Food</span><span class="food-text">${food}</span></td>
+<td class="meal-action"><button type="button" class="secondary change-food-btn" onclick="changeFood(this)">Change Food ↻</button></td>`;scheduleBody.appendChild(tr);scheduledReminders.push({name:m.name,time:t,calories:kcal,food})});
  $('targetKcal').textContent=`${total.toLocaleString()} kcal`;$('mealCountMetric').textContent=`${n} meals`;$('fastHours').textContent=`${Math.max(0,24-win/60).toFixed(1).replace('.0','')} h`;
  localStorage.setItem('calorieReminderSchedule',JSON.stringify(currentSchedule()));
 }
 function currentSchedule(){
  const rows=[...scheduleBody.querySelectorAll('tr')];
- const meals=rows.map((r,i)=>({name:`Meal ${i+1}`,time:r.querySelector('.meal-time').value,calories:+r.querySelector('.meal-calories').value,food:r.querySelector('.food-text')?.textContent.trim() || ''}));
+ const meals=rows.map((r,i)=>({name:r.querySelector('.meal-main')?.textContent.trim()||`Meal ${i+1}`,time:r.querySelector('.meal-time').value,calories:+r.querySelector('.meal-calories').value,food:r.querySelector('.food-text')?.textContent.trim()||''}));
  return {targetCalories:+$('targetInput').value,mealCount:+$('mealCount').value,firstMeal:$('firstMeal').value,lastMeal:$('lastMeal').value,meals};
 }
 async function syncSchedule(){
@@ -271,7 +314,12 @@ function renderSavedSchedule(s){
  scheduledReminders=s.meals.map((m,i)=>({name:m.name||`Meal ${i+1}`,time:m.time,calories:+m.calories||0,food:m.food||''}));
  scheduledReminders.forEach(m=>{
    const tr=document.createElement('tr');
-   tr.innerHTML=`<td class="meal-name">${m.name}</td><td><input class="meal-time" type="time" value="${m.time}"></td><td><input class="meal-calories" type="number" value="${m.calories}" step="10"> <span class="kcal">kcal</span></td><td>${m.food}</td><td>Saved</td>`;
+   tr.dataset.foodIndex='0';tr.innerHTML=`
+<td class="meal-name"><span class="meal-label">Meal</span><span class="meal-main">${m.name}</span></td>
+<td><span class="meal-label">Time</span><input class="meal-time" type="time" value="${m.time}"></td>
+<td><span class="meal-label">Calories (kcal)</span><input class="meal-calories" type="number" value="${m.calories}" step="10"></td>
+<td><span class="meal-label">Suggested Malaysian Food</span><span class="food-text">${m.food}</span></td>
+<td class="meal-action"><button type="button" class="secondary change-food-btn" onclick="changeFood(this)">Change Food ↻</button></td>`;
    scheduleBody.appendChild(tr);
  });
  const start=mins(s.firstMeal||$('firstMeal').value),end=mins(s.lastMeal||$('lastMeal').value);let win=end-start;if(win<=0)win+=1440;
