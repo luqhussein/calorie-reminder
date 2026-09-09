@@ -24,6 +24,7 @@ table{width:100%;border-collapse:collapse;min-width:720px}th,td{padding:13px 10p
 .notice{padding:13px 14px;border-radius:12px;background:#f3f8ff;border:1px solid #dceaff;color:#365a86;font-size:13px;line-height:1.5;margin-top:14px}.notice.good{background:#f3f9f6;border-color:#d8efe2;color:#2f6f4e}.notice.bad{background:#fff5f5;border-color:#f1d3d3;color:var(--danger)}
 .toast{position:fixed;right:16px;left:16px;bottom:calc(16px + env(safe-area-inset-bottom));max-width:430px;margin:auto;background:#172131;color:#fff;padding:14px 16px;border-radius:13px;box-shadow:0 14px 35px rgba(0,0,0,.2);display:none;z-index:99}.toast.show{display:block}.toast b{display:block;margin-bottom:4px}.backlink{display:inline-block;margin-bottom:14px;color:var(--accent2);cursor:pointer;font-weight:700}
 @media(max-width:760px){.grid,.grid4{grid-template-columns:1fr 1fr}.summary{grid-template-columns:1fr}.actions button{flex:1 1 180px}}@media(max-width:520px){.grid,.grid4{grid-template-columns:1fr}.card{padding:18px}.actions{display:grid;grid-template-columns:1fr}.actions button{width:100%}}
+.change-food-btn{margin-top:9px;min-height:36px;padding:8px 11px;font-size:12px;border-radius:10px;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -76,7 +77,7 @@ table{width:100%;border-collapse:collapse;min-width:720px}th,td{padding:13px 10p
     </section>
 
     <section class="card"><div class="table-wrap"><table>
-      <thead><tr><th>Meal</th><th>Time</th><th>Calories</th><th>Food direction</th><th>Reminder</th></tr></thead>
+      <thead><tr><th>Meal</th><th>Time</th><th>Calories</th><th>Malaysian meal suggestion</th><th>Reminder</th></tr></thead>
       <tbody id="scheduleBody"></tbody>
     </table></div></section>
   </section>
@@ -95,20 +96,142 @@ function timeStr(total){total=(total+1440)%1440;return `${String(Math.floor(tota
 function deviceId(){let id=localStorage.getItem('calReminderDeviceId');if(!id){id=(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random());localStorage.setItem('calReminderDeviceId',id)}return id}
 function timezone(){return Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'}
 function calcTarget(sex,age,height,weight,activity){let bmr=sex==='male'?(10*weight)+(6.25*height)-(5*age)+5:(10*weight)+(6.25*height)-(5*age)-161;const maintenance=Math.round(bmr*activity);let deficit=Math.max(250,Math.min(Math.round(maintenance*.15),500));let target=Math.max(maintenance-deficit,sex==='male'?1500:1200);return{maintenanceCalories:maintenance,targetCalories:Math.round(target)}}
-function template(n){return n===3?[{name:'Meal 1',pct:.30,food:'Protein + fibre + controlled carbs'},{name:'Meal 2',pct:.35,food:'Lean protein + vegetables + rice/potato'},{name:'Meal 3',pct:.35,food:'Protein-focused dinner + vegetables'}]:[{name:'Meal 1',pct:.25,food:'Protein + fibre + controlled carbs'},{name:'Meal 2',pct:.30,food:'Lean protein + vegetables + rice/potato'},{name:'Meal 3',pct:.15,food:'Light snack: yogurt, fruit, eggs or nuts'},{name:'Meal 4',pct:.30,food:'Protein-focused dinner + vegetables'}]}
+function malaysianFoodOptions(i,kcal,n){
+ const k=Number(kcal);
+
+ if(n===3){
+  const options=[
+   k<=400?[
+    '2 half-boiled eggs + 2 wholemeal toast + kopi O kosong (~350–400 kcal)',
+    'Oatmeal with banana + 1 boiled egg + kopi O kosong (~350–400 kcal)',
+    '2 chapati + light dhal, no sweet drink (~350–400 kcal)',
+    'Small mee hoon soup + egg + vegetables (~350–400 kcal)'
+   ]:[
+    'Small nasi lemak + boiled egg, less sambal (~450–550 kcal)',
+    'Mee hoon soup + chicken + vegetables (~450–550 kcal)',
+    '2 chapati + dhal + boiled egg (~450–550 kcal)',
+    'Small nasi kerabu + grilled chicken, less sauce (~450–550 kcal)'
+   ],
+   k<=500?[
+    'Mee sup with chicken + extra vegetables, moderate portion (~400–500 kcal)',
+    'Nasi campur: small rice + grilled chicken + 2 vegetables, little kuah (~450–500 kcal)',
+    'Chicken porridge + egg + vegetables (~400–500 kcal)',
+    'Yong tau foo soup: 5–6 pieces + small rice (~400–500 kcal)'
+   ]:[
+    'Nasi campur: rice + grilled/roasted chicken + 2 vegetables, little kuah (~500–650 kcal)',
+    'Nasi ayam: controlled rice + skinless chicken + cucumber, less sauce (~500–650 kcal)',
+    'Mee sup + chicken + egg + vegetables (~500–600 kcal)',
+    'Rice + ikan bakar + ulam + clear soup (~500–650 kcal)'
+   ],
+   k<=500?[
+    'Chapati + dhal + egg/chicken + vegetables (~400–500 kcal)',
+    'Rice + ikan bakar + vegetables, small portion (~400–500 kcal)',
+    'Tom yam clear soup + chicken/seafood + small rice (~400–500 kcal)',
+    'Mee hoon soup + egg + vegetables (~400–500 kcal)'
+   ]:[
+    'Rice + ikan bakar/asam pedas + vegetables + clear soup (~500–650 kcal)',
+    'Nasi campur: rice + ayam bakar + 2 vegetables, little kuah (~500–650 kcal)',
+    'Tom yam seafood + rice + vegetables (~500–600 kcal)',
+    '2 chapati + dhal + tandoori chicken + salad (~500–650 kcal)'
+   ]
+  ];
+  return options[i] || options[options.length-1];
+ }
+
+ const options=[
+  k<=350?[
+   '2 half-boiled eggs + 2 wholemeal toast + kopi O kosong (~300–350 kcal)',
+   'Oatmeal + banana + 1 boiled egg (~300–350 kcal)',
+   '1 chapati + dhal + 1 egg (~300–350 kcal)',
+   'Small mee hoon soup + vegetables (~300–350 kcal)'
+  ]:[
+   'Small nasi lemak + boiled egg, less sambal (~400–500 kcal)',
+   '2 chapati + dhal + 1 boiled egg (~400–500 kcal)',
+   'Mee hoon soup + chicken + vegetables (~400–500 kcal)',
+   'Small nasi kerabu + grilled chicken, less sauce (~400–500 kcal)'
+  ],
+  k<=450?[
+   'Mee sup with chicken + vegetables, moderate portion (~400–450 kcal)',
+   'Nasi campur: small rice + grilled chicken + 2 vegetables (~400–450 kcal)',
+   'Chicken porridge + egg + vegetables (~400–450 kcal)',
+   'Yong tau foo soup + small rice (~400–450 kcal)'
+  ]:[
+   'Nasi campur: rice + grilled/roasted chicken + 2 vegetables, little kuah (~450–600 kcal)',
+   'Nasi ayam: controlled rice + skinless chicken + cucumber, less sauce (~450–600 kcal)',
+   'Mee sup + chicken + egg + vegetables (~450–550 kcal)',
+   'Rice + ikan bakar + ulam + clear soup (~450–600 kcal)'
+  ],
+  k<=200?[
+   '1 fruit + plain yogurt (~150–200 kcal)',
+   '2 unsweetened biscuits + kopi O kosong + fruit (~150–200 kcal)',
+   '1 boiled egg + banana + tea O kosong (~150–200 kcal)',
+   'Small steamed corn / jagung cup (~150–200 kcal)'
+  ]:[
+   'Popiah basah + fruit (~200–300 kcal)',
+   'Small bubur kacang, less sugar (~200–300 kcal)',
+   '2 boiled eggs + fruit (~200–300 kcal)',
+   'Small sandwich: wholemeal bread + egg/tuna (~200–300 kcal)'
+  ],
+  k<=450?[
+   'Chapati + dhal + egg/chicken + vegetables (~400–450 kcal)',
+   'Rice + ikan bakar + vegetables, small portion (~400–450 kcal)',
+   'Clear tom yam + chicken/seafood + small rice (~400–450 kcal)',
+   'Mee hoon soup + egg + vegetables (~400–450 kcal)'
+  ]:[
+   'Rice + ikan bakar/asam pedas + vegetables + clear soup (~450–600 kcal)',
+   'Nasi campur: rice + ayam bakar + 2 vegetables, little kuah (~450–600 kcal)',
+   'Tom yam seafood + rice + vegetables (~450–550 kcal)',
+   '2 chapati + dhal + tandoori chicken + salad (~450–600 kcal)'
+  ]
+ ];
+ return options[i] || options[options.length-1];
+}
+
+function malaysianFoodSuggestion(i,kcal,n){
+ const opts=malaysianFoodOptions(i,kcal,n);
+ return opts[0];
+}
+
+function changeFood(btn){
+ const row=btn.closest('tr');
+ const rows=[...scheduleBody.querySelectorAll('tr')];
+ const i=rows.indexOf(row);
+ const kcal=Number(row.querySelector('.meal-calories')?.value||0);
+ const n=Number($('mealCount').value);
+ const opts=malaysianFoodOptions(i,kcal,n);
+ const foodEl=row.querySelector('.food-text');
+ let idx=Number(row.dataset.foodIndex||0);
+ idx=(idx+1)%opts.length;
+ row.dataset.foodIndex=String(idx);
+ foodEl.textContent=opts[idx];
+
+ // Keep local schedule in sync immediately.
+ const schedule=currentSchedule();
+ scheduledReminders=schedule.meals;
+ localStorage.setItem('calorieReminderSchedule',JSON.stringify(schedule));
+
+ showToast('Food changed',`${schedule.meals[i].name}: ${opts[idx]}`);
+}
+function template(n){
+ return n===3?[
+  {name:'Breakfast / First Meal',pct:.30},{name:'Lunch',pct:.35},{name:'Dinner',pct:.35}
+ ]:[
+  {name:'Breakfast / First Meal',pct:.25},{name:'Lunch',pct:.30},{name:'Tea Time',pct:.15},{name:'Dinner',pct:.30}
+ ];
+}
 
 $('profileForm').addEventListener('submit',e=>{e.preventDefault();const sex=document.querySelector('input[name=sex]:checked')?.value,age=+$('age').value,height=+$('height').value,weight=+$('weight').value,activity=+$('activity').value;if(!sex||!age||!height||!weight||!activity)return;const result=calcTarget(sex,age,height,weight,activity),profile={sex,age,height,weight,activity,...result};localStorage.setItem('calorieReminderProfile',JSON.stringify(profile));$('targetInput').value=profile.targetCalories;$('profilePill').textContent=`${sex==='male'?'Male':'Female'} • ${profile.targetCalories.toLocaleString()} kcal target`;showPage(2);buildSchedule()});
 
 function buildSchedule(){
  const total=Math.max(1200,+$('targetInput').value||1800),n=+$('mealCount').value,start=mins($('firstMeal').value),end=mins($('lastMeal').value);let win=end-start;if(win<=0)win+=1440;
  const tp=template(n),gap=win/(n-1);scheduleBody.innerHTML='';scheduledReminders=[];let used=0;
- tp.forEach((m,i)=>{const kcal=i===tp.length-1?total-used:Math.round(total*m.pct/10)*10;used+=kcal;const t=timeStr(Math.round(start+gap*i));const tr=document.createElement('tr');tr.innerHTML=`<td class="meal-name">${m.name}</td><td><input class="meal-time" type="time" value="${t}"></td><td><input class="meal-calories" type="number" value="${kcal}" step="10"> <span class="kcal">kcal</span></td><td>${m.food}</td><td>Ready</td>`;scheduleBody.appendChild(tr);scheduledReminders.push({name:m.name,time:t,calories:kcal,food:m.food})});
+ tp.forEach((m,i)=>{const kcal=i===tp.length-1?total-used:Math.round(total*m.pct/10)*10;used+=kcal;const t=timeStr(Math.round(start+gap*i));const food=malaysianFoodSuggestion(i,kcal,n);const tr=document.createElement('tr');tr.dataset.foodIndex='0';tr.innerHTML=`<td class="meal-name">${m.name}</td><td><input class="meal-time" type="time" value="${t}"></td><td><input class="meal-calories" type="number" value="${kcal}" step="10"> <span class="kcal">kcal</span></td><td><span class="food-text">${food}</span><br><button type="button" class="secondary change-food-btn" onclick="changeFood(this)">Change Food ↻</button></td><td>Ready</td>`;scheduleBody.appendChild(tr);scheduledReminders.push({name:m.name,time:t,calories:kcal,food})});
  $('targetKcal').textContent=`${total.toLocaleString()} kcal`;$('mealCountMetric').textContent=`${n} meals`;$('fastHours').textContent=`${Math.max(0,24-win/60).toFixed(1).replace('.0','')} h`;
  localStorage.setItem('calorieReminderSchedule',JSON.stringify(currentSchedule()));
 }
 function currentSchedule(){
  const rows=[...scheduleBody.querySelectorAll('tr')];
- const meals=rows.map((r,i)=>({name:`Meal ${i+1}`,time:r.querySelector('.meal-time').value,calories:+r.querySelector('.meal-calories').value,food:r.children[3].textContent.trim()}));
+ const meals=rows.map((r,i)=>({name:`Meal ${i+1}`,time:r.querySelector('.meal-time').value,calories:+r.querySelector('.meal-calories').value,food:r.querySelector('.food-text')?.textContent.trim() || ''}));
  return {targetCalories:+$('targetInput').value,mealCount:+$('mealCount').value,firstMeal:$('firstMeal').value,lastMeal:$('lastMeal').value,meals};
 }
 async function syncSchedule(){
